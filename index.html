@@ -706,6 +706,7 @@
         <a href="#architecture">Architecture</a>
         <a href="#encryption">Encryption</a>
         <a href="#metadata">Metadata</a>
+        <a href="#agents">AI Agents</a>
         <a href="#repos">Repos</a>
       </nav>
 
@@ -1002,6 +1003,202 @@
             <p>
               The browser joins registry data, encrypted invitations, encrypted messages and local keys into a usable messenger UI.
             </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="agents">
+      <div class="shell">
+        <div class="section-head">
+          <div class="kicker">AI agent integration</div>
+          <h2>Agents can use the messenger through a restricted core wrapper.</h2>
+          <p>
+            Mantle Private Messenger is designed so AI agents do not need raw unrestricted wallet or contract access.
+            Instead, an agent can be connected through a small dedicated package that wraps the messenger core and exposes
+            only approved read and write operations.
+          </p>
+        </div>
+
+        <div class="cards">
+          <div class="card big">
+            <span class="badge">Agent core</span>
+            <h3>@mantle/messenger-ai-agent-core</h3>
+            <p>
+              The AI-agent package sits on top of <strong>@mantle/messenger-core</strong>. It reuses the same sync,
+              encryption, local database and contract write logic, but presents a narrower API made for controlled
+              automation instead of full application access.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="badge purple">No raw wallet API</span>
+            <h3>Controlled signing</h3>
+            <p>
+              The agent can be given a private-key based signer or a delegated local signer, but the public API does not
+              expose arbitrary wallet clients or arbitrary contract calls.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="badge blue">Same privacy model</span>
+            <h3>Local decryption</h3>
+            <p>
+              Agents read the same locally reconstructed messenger state. Plaintext still appears only after the owner
+              gives the agent access to the required local context and keys.
+            </p>
+          </div>
+        </div>
+
+        <div class="diagram" style="margin-top: 18px;">
+          <div class="flow">
+            <div class="lane">
+              <div class="node glow">
+                <h4>User-controlled context</h4>
+                <p>
+                  The owner decides which account, signer, chat state and local messenger keys are available to the agent.
+                </p>
+              </div>
+
+              <div class="node">
+                <h4>Policy boundary</h4>
+                <p>
+                  The agent is not the protocol owner. It receives a constrained interface with specific allowed actions.
+                </p>
+              </div>
+            </div>
+
+            <div class="center-stack">
+              <div class="contract-box">
+                <h4>AI Agent Core</h4>
+                <p>
+                  A restricted client layer that exposes whitelisted read/write functions and delegates real protocol work
+                  to the messenger core.
+                </p>
+
+                <div class="mix" aria-label="Agent API examples">
+                  <div class="cipher">read.health()</div>
+                  <div class="cipher">read.localChats()</div>
+                  <div class="cipher">read.localMessages()</div>
+                  <div class="cipher">write.sendMessage()</div>
+                  <div class="cipher">write.createChat()</div>
+                  <div class="cipher">write.inviteUser()</div>
+                  <div class="cipher">write.acceptInvitation()</div>
+                  <div class="cipher">sync.start()</div>
+                </div>
+              </div>
+
+              <div class="arrow">↓</div>
+
+              <div class="contract-box">
+                <h4>Messenger Core</h4>
+                <p>
+                  The same core package powers the web app and the agent integration: encryption helpers, IndexedDB state,
+                  syncer, IPFS attachment logic and contract write actions.
+                </p>
+              </div>
+            </div>
+
+            <div class="lane">
+              <div class="node green">
+                <h4>Smart contracts</h4>
+                <p>
+                  The agent writes through the same protocol paths as a normal user: registry, mixed invitations and
+                  user-account message flows.
+                </p>
+              </div>
+
+              <div class="node">
+                <h4>Encrypted network state</h4>
+                <p>
+                  Contracts and IPFS still receive encrypted payloads. The agent does not make plaintext public.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="steps" style="margin-top: 18px;">
+          <div class="step">
+            <h3>Read safely</h3>
+            <p>
+              An agent can inspect local chats, messages, invitations, registration status and health checks through a
+              limited read API.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Draft or summarize</h3>
+            <p>
+              The agent can summarize unread conversations, prepare replies, explain attachments or help manage incoming
+              invitations.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Write with permission</h3>
+            <p>
+              Allowed writes can include registering the agent account, creating chats, sending messages, inviting users
+              and accepting invitations.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Keep the boundary</h3>
+            <p>
+              The restricted wrapper avoids turning an AI assistant into a fully unrestricted wallet, contract caller or
+              raw database editor.
+            </p>
+          </div>
+        </div>
+
+        <div class="comparison" style="margin-top: 18px;">
+          <div class="card">
+            <span class="badge">Good agent tasks</span>
+            <h3>What the agent layer is useful for</h3>
+
+            <div class="list">
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Summarize recent encrypted conversations after local decryption.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Prepare replies and ask the user before sending.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Watch for new invitations and explain who can be accepted.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Operate a service-style messenger account with a controlled private key.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <span class="badge purple">Intentional limits</span>
+            <h3>What it should not expose by default</h3>
+
+            <div class="list">
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>No arbitrary contract calls from the agent API.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>No raw unrestricted wallet client as the public interface.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>No silent access to user plaintext without the user-provided local context.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>No assumption that automation equals ownership. The user remains the control point.</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
