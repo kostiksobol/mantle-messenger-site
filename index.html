@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mantle Private Messenger</title>
+  <meta
+    name="description"
+    content="A private on-chain messenger architecture for encrypted chats, mixed invitations, hidden metadata and IPFS encrypted attachments."
+  />
+  <style>
+    :root {
+      --bg: #050712;
+      --panel: rgba(255, 255, 255, 0.075);
+      --panel-strong: rgba(255, 255, 255, 0.115);
+      --text: #f6f7ff;
+      --muted: rgba(246, 247, 255, 0.68);
+      --faint: rgba(246, 247, 255, 0.42);
+      --line: rgba(255, 255, 255, 0.14);
+      --accent: #7c5cff;
+      --accent-2: #27e8a7;
+      --accent-3: #4cc9ff;
+      --danger: #ff6b9a;
+      --warning: #ffd166;
+      --shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+      --radius: 28px;
+      --radius-sm: 18px;
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 5%, rgba(124, 92, 255, 0.42), transparent 34rem),
+        radial-gradient(circle at 86% 12%, rgba(39, 232, 167, 0.20), transparent 31rem),
+        radial-gradient(circle at 50% 70%, rgba(76, 201, 255, 0.14), transparent 42rem),
+        linear-gradient(180deg, #050712 0%, #090b19 45%, #050712 100%);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .noise {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: 0.13;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: radial-gradient(circle at center, black, transparent 86%);
+    }
+
+    .shell {
+      width: min(var(--max), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(22px);
+      background: rgba(5, 7, 18, 0.72);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .nav {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      background:
+        radial-gradient(circle at 28% 25%, rgba(255,255,255,0.9), transparent 11px),
+        linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 34px rgba(124, 92, 255, 0.5);
+    }
+
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .navlinks a:hover {
+      color: var(--text);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.34);
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .button.primary {
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #050712;
+      box-shadow: 0 18px 48px rgba(124, 92, 255, 0.28);
+    }
+
+    .hero {
+      padding: 92px 0 54px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: rgba(246, 247, 255, 0.82);
+      background: rgba(255,255,255,0.075);
+      border: 1px solid rgba(255,255,255,0.13);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 22px var(--accent-2);
+    }
+
+    h1 {
+      margin: 26px 0 20px;
+      font-size: clamp(48px, 7vw, 92px);
+      line-height: 0.93;
+      letter-spacing: -0.085em;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff, #b8b0ff 48%, #61ffd1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      max-width: 650px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.72;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .hero-card {
+      position: relative;
+      min-height: 520px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.045));
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: -120px -90px auto auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(39, 232, 167, 0.16);
+      filter: blur(20px);
+    }
+
+    .terminal {
+      position: relative;
+      border-radius: 22px;
+      background: rgba(0,0,0,0.42);
+      border: 1px solid rgba(255,255,255,0.13);
+      overflow: hidden;
+    }
+
+    .terminal-top {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      height: 42px;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+
+    .window-dot:nth-child(2) {
+      background: var(--warning);
+    }
+
+    .window-dot:nth-child(3) {
+      background: var(--accent-2);
+    }
+
+    .terminal-body {
+      padding: 22px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.85;
+      color: rgba(246, 247, 255, 0.84);
+    }
+
+    .code-green {
+      color: var(--accent-2);
+    }
+
+    .code-blue {
+      color: var(--accent-3);
+    }
+
+    .code-purple {
+      color: #b8a7ff;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.11);
+    }
+
+    .mini-card strong {
+      display: block;
+      font-size: 20px;
+      letter-spacing: -0.04em;
+    }
+
+    .mini-card span {
+      display: block;
+      margin-top: 5px;
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    section {
+      padding: 72px 0;
+    }
+
+    .section-head {
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    .kicker {
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    h2 {
+      margin: 12px 0 14px;
+      font-size: clamp(34px, 4.6vw, 62px);
+      line-height: 1.02;
+      letter-spacing: -0.07em;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      padding: 24px;
+      border-radius: var(--radius-sm);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .card.big {
+      grid-column: span 2;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.04em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.68;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 10px;
+      margin-bottom: 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #07110d;
+      background: var(--accent-2);
+    }
+
+    .badge.purple {
+      background: #b8a7ff;
+    }
+
+    .badge.blue {
+      background: #85ddff;
+    }
+
+    .diagram {
+      padding: 26px;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(124, 92, 255, 0.19), transparent 28rem),
+        radial-gradient(circle at 80% 70%, rgba(39, 232, 167, 0.12), transparent 26rem),
+        rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .lane {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .node {
+      position: relative;
+      min-height: 116px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(5, 7, 18, 0.72);
+      border: 1px solid rgba(255,255,255,0.13);
+    }
+
+    .node.glow {
+      background:
+        linear-gradient(180deg, rgba(124, 92, 255, 0.19), rgba(5,7,18,0.72));
+      border-color: rgba(124, 92, 255, 0.44);
+      box-shadow: 0 0 42px rgba(124, 92, 255, 0.18);
+    }
+
+    .node.green {
+      background:
+        linear-gradient(180deg, rgba(39, 232, 167, 0.14), rgba(5,7,18,0.72));
+      border-color: rgba(39, 232, 167, 0.34);
+    }
+
+    .node h4 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: -0.03em;
+    }
+
+    .node p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .arrow {
+      align-self: center;
+      color: var(--accent-2);
+      font-weight: 900;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .center-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .contract-box {
+      padding: 22px;
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(124, 92, 255, 0.24), rgba(76, 201, 255, 0.10)),
+        rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .contract-box h4 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: -0.05em;
+    }
+
+    .mix {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .cipher {
+      padding: 9px;
+      border-radius: 12px;
+      color: rgba(246,247,255,0.78);
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      padding: 24px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.065);
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: "0" counter(step);
+      display: inline-flex;
+      width: 38px;
+      height: 38px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      border-radius: 13px;
+      background: rgba(39,232,167,0.15);
+      color: var(--accent-2);
+      font-weight: 900;
+    }
+
+    .step h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      letter-spacing: -0.04em;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.62;
+      font-size: 14px;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .list-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .check {
+      flex: 0 0 auto;
+      width: 23px;
+      height: 23px;
+      border-radius: 9px;
+      background: rgba(39,232,167,0.16);
+      color: var(--accent-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+    }
+
+    .warn {
+      background: rgba(255,209,102,0.16);
+      color: var(--warning);
+    }
+
+    .repo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .repo {
+      padding: 20px;
+      min-height: 154px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+
+    .repo:hover {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.11);
+    }
+
+    .repo strong {
+      display: block;
+      margin-bottom: 8px;
+      letter-spacing: -0.035em;
+    }
+
+    .repo span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      padding: 46px 0 60px;
+      color: var(--faint);
+      border-top: 1px solid rgba(255,255,255,0.09);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .comparison,
+      .flow {
+        grid-template-columns: 1fr;
+      }
+
+      .cards,
+      .steps,
+      .repo-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .card.big {
+        grid-column: span 1;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100% - 28px, var(--max));
+      }
+
+      .nav {
+        height: auto;
+        padding: 16px 0;
+        align-items: flex-start;
+      }
+
+      .navlinks {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 56px;
+      }
+
+      .hero-card {
+        min-height: auto;
+      }
+
+      .cards,
+      .steps,
+      .repo-grid,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mix {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header>
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="Mantle Private Messenger">
+        <span class="logo"></span>
+        <span>Mantle Private Messenger</span>
+      </a>
+
+      <nav class="navlinks" aria-label="Main navigation">
+        <a href="#architecture">Architecture</a>
+        <a href="#encryption">Encryption</a>
+        <a href="#metadata">Metadata</a>
+        <a href="#repos">Repos</a>
+      </nav>
+
+      <a class="button" href="https://github.com/kostiksobol/mantle-private-messenger" target="_blank" rel="noreferrer">
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="eyebrow">
+            <span class="dot"></span>
+            Private messenger built on Mantle-compatible smart contracts
+          </div>
+
+          <h1>
+            Encrypted chats.
+            <span class="gradient-text">Minimal public metadata.</span>
+          </h1>
+
+          <p>
+            Mantle Private Messenger is a browser-first encrypted messenger where users own their identity,
+            write message state through their own on-chain account layer, exchange encrypted invitations through
+            one shared main contract, and keep readable content client-side only.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="#architecture">See how it works</a>
+            <a class="button" href="#metadata">Metadata model</a>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <div class="terminal">
+            <div class="terminal-top">
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+            </div>
+
+            <div class="terminal-body">
+              <div><span class="code-purple">user.alice</span> creates chat key locally</div>
+              <div><span class="code-green">AES-GCM</span> encrypts messages and files</div>
+              <div><span class="code-blue">RSA-OAEP</span> encrypts invitations per recipient</div>
+              <div>MainConnector receives only encrypted invitation blobs</div>
+              <div>UserAccount receives encrypted chat events</div>
+              <div>IPFS stores encrypted attachment bytes only</div>
+              <br />
+              <div class="code-green">plaintext never leaves the browser</div>
+            </div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="mini-card">
+              <strong>Client-side</strong>
+              <span>messages, files, chat keys</span>
+            </div>
+            <div class="mini-card">
+              <strong>On-chain</strong>
+              <span>encrypted events only</span>
+            </div>
+            <div class="mini-card">
+              <strong>Mixed</strong>
+              <span>invitations in one pool</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="shell">
+        <div class="section-head">
+          <div class="kicker">Architecture</div>
+          <h2>One public protocol, many private local views.</h2>
+          <p>
+            The protocol separates identity, invitations, per-user writes, encrypted message state and encrypted file storage.
+            The blockchain provides ordering and availability. The browser reconstructs the readable messenger locally.
+          </p>
+        </div>
+
+        <div class="diagram">
+          <div class="flow">
+            <div class="lane">
+              <div class="node glow">
+                <h4>Alice browser</h4>
+                <p>Holds Alice wallet key for transactions and Alice messenger keys for decrypting invitations.</p>
+              </div>
+
+              <div class="node">
+                <h4>Alice local DB</h4>
+                <p>Stores decrypted chats, cached files, local profile state and local signer accounts.</p>
+              </div>
+            </div>
+
+            <div class="center-stack">
+              <div class="contract-box">
+                <h4>MainConnector</h4>
+                <p>
+                  The shared entry point. It stores user registry data and a mixed stream of encrypted invitation envelopes.
+                  Observers see ciphertext blobs, not readable chat names or invitation content.
+                </p>
+
+                <div class="mix" aria-label="Encrypted invitation pool">
+                  <div class="cipher">0xa91f...e2</div>
+                  <div class="cipher">0x7c44...19</div>
+                  <div class="cipher">0xcc20...b8</div>
+                  <div class="cipher">0x0f92...44</div>
+                  <div class="cipher">0x8a1e...75</div>
+                  <div class="cipher">0x6bdf...02</div>
+                  <div class="cipher">0xe419...aa</div>
+                  <div class="cipher">0x11ab...90</div>
+                </div>
+              </div>
+
+              <div class="arrow">↓</div>
+
+              <div class="contract-box">
+                <h4>User account layer</h4>
+                <p>
+                  After a user accepts or creates a chat, actual encrypted chat activity is written through the user's own
+                  account path instead of one global public room.
+                </p>
+              </div>
+            </div>
+
+            <div class="lane">
+              <div class="node green">
+                <h4>Bob browser</h4>
+                <p>Scans mixed invitations, tries to decrypt only envelopes intended for Bob, ignores the rest.</p>
+              </div>
+
+              <div class="node">
+                <h4>Encrypted IPFS files</h4>
+                <p>Attachments are encrypted before upload. IPFS sees bytes and CIDs, not file plaintext.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="encryption">
+      <div class="shell">
+        <div class="section-head">
+          <div class="kicker">Encryption flow</div>
+          <h2>Readable content exists only after local decryption.</h2>
+          <p>
+            The messenger uses two different key layers: an EVM signing key for transactions and a messenger encryption layer
+            for private communication. They are intentionally separate.
+          </p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <h3>Chat key created locally</h3>
+            <p>
+              The browser creates a symmetric chat key. This key is never published in plaintext.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Invitation encrypted</h3>
+            <p>
+              The chat key and invitation metadata are encrypted for the recipient. Only the recipient can open it locally.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Messages encrypted</h3>
+            <p>
+              Message text is encrypted before it touches contracts, logs, indexers or IPFS.
+            </p>
+          </div>
+
+          <div class="step">
+            <h3>Files encrypted before IPFS</h3>
+            <p>
+              The app uploads encrypted attachment bytes. The message stores only the encrypted file reference and IV.
+            </p>
+          </div>
+        </div>
+
+        <div class="cards" style="margin-top: 18px;">
+          <div class="card big">
+            <span class="badge">Important separation</span>
+            <h3>Wallet key signs transactions. Messenger key decrypts communication.</h3>
+            <p>
+              The EVM private key pays gas and proves account ownership. It is not used as the file or message encryption key.
+              Messenger encryption keys are used to open invitations and decrypt chat state inside the browser.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="badge purple">Local first</span>
+            <h3>State is reconstructed locally</h3>
+            <p>
+              The chain gives encrypted events. The browser syncer reads them, decrypts what it can, and builds the user's local inbox.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metadata">
+      <div class="shell">
+        <div class="section-head">
+          <div class="kicker">Metadata model</div>
+          <h2>Metadata is reduced by design, not magically erased.</h2>
+          <p>
+            The protocol avoids a single public chat room model. It mixes encrypted invitations in the main contract and pushes
+            encrypted conversation activity into user-specific account paths.
+          </p>
+        </div>
+
+        <div class="comparison">
+          <div class="card">
+            <span class="badge">Hidden or minimized</span>
+            <h3>What observers should not read directly</h3>
+
+            <div class="list">
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Plain message text is not stored on-chain.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Plain file content is not uploaded to IPFS.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Invitation payloads are mixed as encrypted envelopes in the shared MainConnector.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Recipients discover only invitations that their local messenger key can decrypt.</span>
+              </div>
+              <div class="list-item">
+                <span class="check">✓</span>
+                <span>Each user writes encrypted chat state through their own account flow, reducing global chat graph leakage.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <span class="badge purple">Still public</span>
+            <h3>What blockchains still reveal</h3>
+
+            <div class="list">
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>Transactions, sender addresses, gas usage and timestamps remain visible.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>IPFS CIDs and encrypted file sizes can exist as metadata.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>Repeated interaction timing can still leak behavioral patterns.</span>
+              </div>
+              <div class="list-item">
+                <span class="check warn">!</span>
+                <span>This is private messaging architecture, not full anonymity infrastructure.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards" style="margin-top: 18px;">
+          <div class="card">
+            <span class="badge blue">Main contract</span>
+            <h3>Invitation mix</h3>
+            <p>
+              All encrypted invitations land in one shared stream. Clients scan the stream and attempt local decryption.
+              Non-matching envelopes remain unreadable noise.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="badge">User account</span>
+            <h3>Per-user writes</h3>
+            <p>
+              A user writes the encrypted chat events that belong to their account layer. The readable chat list is assembled locally.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="badge purple">Local client</span>
+            <h3>Private view</h3>
+            <p>
+              The browser joins registry data, encrypted invitations, encrypted messages and local keys into a usable messenger UI.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="repos">
+      <div class="shell">
+        <div class="section-head">
+          <div class="kicker">Repositories</div>
+          <h2>Split into app, core, contracts and agent layer.</h2>
+          <p>
+            The implementation is modular: web UI, shared messenger core, Solidity contracts and restricted AI-agent core.
+          </p>
+        </div>
+
+        <div class="repo-grid">
+          <a class="repo" href="https://github.com/kostiksobol/mantle-private-messenger" target="_blank" rel="noreferrer">
+            <strong>Web app</strong>
+            <span>React/Vite interface for users, wallets, chats, files and developer runtime config.</span>
+          </a>
+
+          <a class="repo" href="https://github.com/kostiksobol/mantle-messenger-core" target="_blank" rel="noreferrer">
+            <strong>Messenger core</strong>
+            <span>Shared sync, local DB, encryption helpers, IPFS attachment flow and contract write actions.</span>
+          </a>
+
+          <a class="repo" href="https://github.com/kostiksobol/mantle-messenger-contracts" target="_blank" rel="noreferrer">
+            <strong>Contracts</strong>
+            <span>Solidity protocol contracts for registry, invitations and user account messaging flows.</span>
+          </a>
+
+          <a class="repo" href="https://github.com/kostiksobol/mantle-messenger-ai-agent-core" target="_blank" rel="noreferrer">
+            <strong>AI agent core</strong>
+            <span>Restricted read/write client for controlled agent access to messenger operations.</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="card big" style="max-width: 920px;">
+          <span class="badge">Protocol summary</span>
+          <h2 style="font-size: clamp(32px, 4vw, 54px);">
+            Public availability. Private readability.
+          </h2>
+          <p>
+            Mantle Private Messenger treats the blockchain as an encrypted coordination layer.
+            Contracts make user identities, encrypted invitation envelopes and encrypted event ordering available.
+            The browser makes them readable only for the user who owns the right local keys.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/kostiksobol/mantle-private-messenger" target="_blank" rel="noreferrer">
+              Open GitHub
+            </a>
+            <a class="button" href="#top">Back to top</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <div>Mantle Private Messenger</div>
+      <div>Encrypted messenger protocol demo for Mantle-compatible networks.</div>
+    </div>
+  </footer>
+</body>
+</html>
